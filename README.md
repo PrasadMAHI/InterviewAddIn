@@ -38,3 +38,6 @@ Do a pull request
 # Conditions and limitations
 
 Your code will be made available publicly under the MIT license. Please let me know if this is going to be an issue. 
+
+# Deadline 
+August 11th
