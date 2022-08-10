@@ -81,7 +81,27 @@ namespace SwBoundingBoxAddIn
                         componentBodies = (object[])component.GetBodies2((int)swBodyType_e.swSolidBody);
                         if(componentBodies!=null)
                             GetExtremePoints(ref tempboxCoordinates, componentBodies);
-                      
+                        //need to add some logic for getting accurate points for asssembly
+                        if (i == 0)
+                            boundingBoxCoordinates = tempboxCoordinates;
+                        
+
+                        if (i > 0)
+                        {
+                           
+                            boundingBoxCoordinates[0] = tempboxCoordinates[0] < boundingBoxCoordinates[0] ? tempboxCoordinates[0] : boundingBoxCoordinates[0];
+                            
+                            boundingBoxCoordinates[1] = tempboxCoordinates[1] < boundingBoxCoordinates[1] ? tempboxCoordinates[1] : boundingBoxCoordinates[1];
+                           
+                            boundingBoxCoordinates[2] = tempboxCoordinates[2] < boundingBoxCoordinates[2] ? tempboxCoordinates[2] : boundingBoxCoordinates[2];
+                            
+                            boundingBoxCoordinates[3] = tempboxCoordinates[3] > boundingBoxCoordinates[3] ? tempboxCoordinates[3] : boundingBoxCoordinates[3];
+                            
+                            boundingBoxCoordinates[4] = tempboxCoordinates[4] > boundingBoxCoordinates[4] ? tempboxCoordinates[4] : boundingBoxCoordinates[4];
+                            
+                            boundingBoxCoordinates[5] = tempboxCoordinates[5] > boundingBoxCoordinates[5] ? tempboxCoordinates[5] : boundingBoxCoordinates[5];
+
+                        }
                     }
                 }
             }
@@ -94,11 +114,50 @@ namespace SwBoundingBoxAddIn
         /// <param name="Coordinates"></param>
         /// <param name="partBodies"></param>
 
-        public  void GetExtremePoints(ref double[] Coordinates, object[] partBodies,bool Iscomponent = false)
+        public  void GetExtremePoints(ref double[] Coordinates, object[] partBodies)
         {
             double minX = 0, minY = 0, minZ = 0;
             double maxX = 0, maxY = 0, maxZ = 0;
-           
+            for (int i = 0; i < partBodies.Length; i++)
+            {
+                Body2 swBody = (Body2)partBodies[i];
+                double x, y, z;
+                //getting extreme coordinate in +ve x axis
+                swBody.GetExtremePoint(1, 0, 0, out x, out y, out z);
+                if (i == 0 || maxX < x)
+                    maxX = x;
+                //getting extreme coordinate in -ve x axis
+                swBody.GetExtremePoint(-1, 0, 0, out x, out y, out z);
+                if (i == 0 || minX > x)
+                    minX = x;
+                //getting extreme coordinate in +ve Y axis
+                swBody.GetExtremePoint(0, 1, 0, out x, out y, out z);
+                if (i == 0 || maxY < y)
+                    maxY = y;
+                //getting extreme coordinate in -ve Y axis
+                swBody.GetExtremePoint(0, -1, 0, out x, out y, out z);
+                if (i == 0 || minY > y)
+                    minY = y;
+
+                //getting extreme coordinate in +ve Z axis
+                swBody.GetExtremePoint(0, 0, 1, out x, out y, out z);
+                if (i == 0 || maxZ < z)
+                    maxZ = z;
+
+                //getting extreme coordinate in -ve Z axis
+                swBody.GetExtremePoint(0, 0, -1, out x, out y, out z);
+                if (i == 0 || minZ > z)
+                    minY = z;
+
+            }
+
+            Coordinates[0] = minX;
+            Coordinates[1] = minY;
+            Coordinates[2] = minZ;
+
+            Coordinates[3] = maxX;
+            Coordinates[4] = maxY;
+            Coordinates[5] = maxZ;
         }
     }
 }
