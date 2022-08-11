@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
+using SolidWorksTools.File;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swcommands;
 using SolidWorks.Interop.swconst;
@@ -20,27 +22,74 @@ namespace SwBoundingBoxAddIn
     public class SwBoundingBoxAddIn:ISwAddin
     {
 
-        private SldWorks swApp;
+        private SldWorks mSwApp;
+        private ICommandManager mCmdMgr = null;
+        private BitmapHandler mBmp;
+
+        #region  declaration of public properties
+        public SldWorks SolidworksApp
+        {
+            get { return mSwApp; }
+        }
+        #endregion
+
+
+
         /// <summary>
         /// This fucntion invokes, while connection to Solidworks, need to add Ui controls and events
         /// </summary>
         /// <param name="ThisSW">Solidworks Application</param>
         /// <param name="Cookie"></param>
         /// <returns></returns>
-        public bool ConnectToSW(object ThisSW, int Cookie)
+        public bool ConnectToSW(object thisSW, int cookie)
         {
-            if (swApp == null)
-                swApp = (SldWorks)ThisSW;
+            mSwApp = (SldWorks)thisSW;
+
+            //Setup callbacks
+            mSwApp.SetAddinCallbackInfo(0, this, cookie);
+
+            #region Setup the Command Manager
+            mCmdMgr = mSwApp.GetCommandManager(cookie);
+            AddCommandMgr();
+            #endregion
 
             return true;
         }
 
+        private void AddCommandMgr()
+        {
+            mBmp = new BitmapHandler();
+            string title = "Bounding Box", toolTip = "Calculates Bounding Box";
+
+
+            int[] docTypes = new int[]{(int)swDocumentTypes_e.swDocASSEMBLY,
+                                       (int)swDocumentTypes_e.swDocDRAWING,
+                                       (int)swDocumentTypes_e.swDocPART};
+
+            Assembly thisAssembly = System.Reflection.Assembly.GetAssembly(this.GetType());
+
+            int refErrors = 0;
+            ICommandGroup cmdGroup = mCmdMgr.CreateCommandGroup2(10, title, toolTip, "", -1, true, ref refErrors);
+            cmdGroup.LargeIconList = mBmp.CreateFileFromResourceBitmap("SwBoundingBoxAddIn.ToolbarLarge.bmp", thisAssembly);
+            cmdGroup.SmallIconList = mBmp.CreateFileFromResourceBitmap("SwBoundingBoxAddIn.ToolbarSmall.bmp", thisAssembly);
+            cmdGroup.LargeMainIcon = mBmp.CreateFileFromResourceBitmap("SwBoundingBoxAddIn.MainIconLarge.bmp", thisAssembly);
+            cmdGroup.SmallMainIcon = mBmp.CreateFileFromResourceBitmap("SwBoundingBoxAddIn.MainIconSmall.bmp", thisAssembly);
+
+            int menuToolbarOption = (int)(swCommandItemType_e.swMenuItem | swCommandItemType_e.swToolbarItem);
+            cmdGroup.AddCommandItem2(title, -1, "", toolTip, 0, "CalculateBoundingBox", "", 1, menuToolbarOption);
+
+            cmdGroup.HasToolbar = true;
+            cmdGroup.HasMenu = true;
+            cmdGroup.Activate();
+
+        }
         /// <summary>
         /// Invokes , while closing/disconnects from SW, Need to do some cleaning related to addin
         /// </summary>
         /// <returns></returns>
         public bool DisconnectFromSW()
         {
+            mCmdMgr.RemoveCommandGroup2(10, false);
             return true;
         }
       
@@ -129,5 +178,10 @@ namespace SwBoundingBoxAddIn
         }
 
         #endregion
+
+        public void CalculateBoundingBox()
+        {
+            bool temp = false;
+        }
     }
 }
